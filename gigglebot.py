@@ -203,7 +203,10 @@ async def process_delay_message(message):
         msg = match.group(2)
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
-        print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
+        try:
+            print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
+        except:
+            pass
         newMessage = DelayedMessage(message, channel, delay)
         if message.guild.id in delayed_messages:
             delayed_messages[message.guild.id].append(newMessage)
@@ -216,7 +219,10 @@ async def process_delay_message(message):
                 delayed_messages[message.guild.id].remove(newMessage)
                 if len(delayed_messages[message.guild.id]) < 1:
                     del delayed_messages[message.guild.id]
-                print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
+                try:
+                    print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
+                except:
+                    pass
     else:
         await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
 
@@ -272,7 +278,10 @@ async def cancel_delay_message(message):
                 if len(delayed_messages[guild_id]) < 1:
                     del delayed_messages[guild_id]
                 await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-                print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
+                try:
+                    print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
+                except:
+                    pass
                 message_found = True
         if not message_found:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
