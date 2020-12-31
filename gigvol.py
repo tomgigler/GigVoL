@@ -11,37 +11,6 @@ from operator import attrgetter
 from hashlib import md5
 
 client = discord.Client()
-delayed_messages = {}
-
-class DelayedMessage:
-    def __init__(self, message, channel, delay):
-        self.message = message
-        self.channel = channel
-        self.deliveryTime = time() + int(delay) * 60
-        self.id = md5((message.author.name + message.content + channel.name + str(self.deliveryTime)).encode('utf-8')).hexdigest()[:8]
-
-async def process_temps(message):
-    processed_values = []
-    output = ""
-    for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
-        match = re.search('([-]?[0-9]*\.?[0-9]+) ?([CFcf])(?:\s+|$|\?|\.|,)', temp)
-        value = float(match.group(1))
-        scale = match.group(2)
-        if scale == 'c':
-            scale = 'C'
-        if scale == 'f':
-            scale = 'F'
-        newvalue = value * 1.8 + 32 if scale == 'C' else (value - 32)/1.8
-        newscale = 'F' if scale == 'C' else 'C'
-
-        if f"{value}{scale}" not in processed_values:
-            output += f"{value} {scale} = {round(newvalue, 1)} {newscale}\n"
-            processed_values.append(f"{value}{scale}")
-            processed_values.append(f"{newvalue}{newscale}")
-
-    if output:
-        embed = discord.Embed(description=output, color=0x00ff00)
-        await message.channel.send(embed=embed)
 
 async def list_user_roles(message):
     youtube_roles = []
@@ -179,71 +148,6 @@ async def process_vol_message(message):
         except:
             pass
 
-async def process_delay_message(message):
-    try:
-        guild = message.guild
-        guild_id = guild.id
-    except:
-        return
-
-    try:
-        channel_name = re.search(r'channel=(.+)', message.content).group(1)
-        channel = discord.utils.get(guild.channels, name=channel_name)
-    except:
-        channel = message.channel
-
-    try:
-        is_admin = message.author.permissions_in(channel).administrator
-    except:
-        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
-        return
-    if is_admin:
-        match = re.search(r'^~giggle delay (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-        delay = match.group(1)
-        msg = match.group(2)
-        msg = f"Here's a message from {message.author.mention}:\n" + msg
-        await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
-        try:
-            print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
-        except:
-            pass
-        newMessage = DelayedMessage(message, channel, delay)
-        if message.guild.id in delayed_messages:
-            delayed_messages[message.guild.id].append(newMessage)
-        else:
-            delayed_messages[message.guild.id] = [newMessage]
-        await asyncio.sleep(int(delay)*60)
-        if message.guild.id in delayed_messages:
-            if newMessage in delayed_messages[message.guild.id]:
-                await channel.send(msg)
-                delayed_messages[message.guild.id].remove(newMessage)
-                if len(delayed_messages[message.guild.id]) < 1:
-                    del delayed_messages[message.guild.id]
-                try:
-                    print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
-                except:
-                    pass
-    else:
-        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
-
-async def list_delay_messages(message):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-    channel = message.channel
-    if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
-        embed=discord.Embed(title="Scheduled Messages ==================================")
-        delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
-        for msg in delayed_messages[guild_id]:
-            embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-            embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
-            embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
-            embed.add_field(name="Delivery Time", value=f"{ctime(msg.deliveryTime)}", inline=False)
-        await channel.send(embed=embed)
-    else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
-
 async def show_delay_message(message):
     try:
         guild_id = message.guild.id
@@ -263,54 +167,9 @@ async def show_delay_message(message):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delay_message(message):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-
-    msg_num = re.search(r'^~giggle delay cancel (\S+)', message.content).group(1)
-    message_found = False
-    if guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
-            if msg.id == msg_num:
-                delayed_messages[guild_id].remove(msg)
-                if len(delayed_messages[guild_id]) < 1:
-                    del delayed_messages[guild_id]
-                await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-                try:
-                    print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
-                except:
-                    pass
-                message_found = True
-        if not message_found:
-            await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
-    else:
-        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
-
 @client.event
 async def on_message(message):
     if message.author == client.user:
-        return
-
-    if message.content == 'kill' and message.author.id == 669370838478225448:
-        await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
-        sys.exit()
-
-    if re.search(r'^~giggle delay list', message.content):
-        await list_delay_messages(message)
-        return
-
-    if re.search(r'^~giggle delay show \S+', message.content):
-        await show_delay_message(message)
-        return
-
-    if re.search(r'^~giggle delay cancel \S+', message.content):
-        await cancel_delay_message(message)
-        return
-
-    if re.search(r'^~giggle delay \d+', message.content):
-        await process_delay_message(message)
         return
 
     if message.author.id == 460410391290314752:
@@ -338,18 +197,5 @@ async def on_message(message):
 
     elif re.search(r'^~giggle youtube list$', message.content, re.IGNORECASE):
         await list_roles(message)
-
-    elif re.search(r'^~giggle.*[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content, re.IGNORECASE):
-        await process_temps(message)
-
-    if client.user.mentioned_in(message) and re.search(f'{client.user.id}', message.content):
-        output = f"Hi {message.author.name}!  I convert temperatures.  Just put \"~giggle\" at the beginning of your message\n"
-        vol_posts_channel = None
-        for channel in message.guild.text_channels:
-            if channel.name == 'voice-of-light-posts':
-                vol_posts_channel = channel
-        if vol_posts_channel:
-            output += f"I also do YouTube announcements on this server.  Type \"~giggle youtube\" for details"
-        await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 client.run(bot_token)
