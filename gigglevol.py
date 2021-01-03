@@ -10,29 +10,29 @@ from time import time, ctime
 client = discord.Client()
 
 async def list_user_roles(message):
-    gigvol_roles = []
-    gigvol_channels = []
+    roles = []
+    channels = []
     server_roles = []
     user_roles = []
-    gigvol_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
-    for channel in gigvol_category.channels:
-        gigvol_channels.append(channel.name)
+    category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    for channel in category.channels:
+        channels.append(channel.name)
     for role in message.guild.roles:
         server_roles.append(role.name)
     for role in message.author.roles:
         user_roles.append(role.name)
-    for name in gigvol_channels:
+    for name in channels:
         if name in server_roles and name in user_roles:
-            if name not in gigvol_roles:
-                gigvol_roles.append(name)
-    if len(gigvol_roles) > 0:
-        embed = discord.Embed(title=f"{message.author.name}'s roles:", description='\n'.join(gigvol_roles), color=0x00ff00)
+            if name not in roles:
+                roles.append(name)
+    if len(roles) > 0:
+        embed = discord.Embed(title=f"{message.author.name}'s roles:", description='\n'.join(roles), color=0x00ff00)
         await message.channel.send(embed=embed)
 
 async def add_user_role(message):
-    add_role = re.search('~gigvol add (.*)', message.content, re.IGNORECASE).group(1)
-    gigvol_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
-    if not discord.utils.get(gigvol_category.channels, name=add_role):
+    add_role = re.search('~giggle add (.*)', message.content, re.IGNORECASE).group(1)
+    category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    if not discord.utils.get(category.channels, name=add_role):
         await message.channel.send(embed=discord.Embed(description=f"Cannot add {add_role} role", color=0x00ff00))
         return
     if discord.utils.get(message.author.roles, name=add_role):
@@ -48,9 +48,9 @@ async def add_user_role(message):
         await message.channel.send(embed=discord.Embed(description=f"Failed to add {add_role} role", color=0x00ff00))
 
 async def remove_user_role(message):
-    remove_role = re.search('~gigvol remove (.*)', message.content, re.IGNORECASE).group(1)
-    gigvol_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
-    if not discord.utils.get(gigvol_category.channels, name=remove_role):
+    remove_role = re.search('~giggle remove (.*)', message.content, re.IGNORECASE).group(1)
+    category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    if not discord.utils.get(category.channels, name=remove_role):
         await message.channel.send(embed=discord.Embed(description=f"Cannot remove {remove_role} role", color=0x00ff00))
         return
     if not discord.utils.get(message.author.roles, name=remove_role):
@@ -66,28 +66,28 @@ async def remove_user_role(message):
         await message.channel.send(embed=discord.Embed(description=f"Failed to remove {remove_role} role", color=0x00ff00))
 
 async def list_roles(message):
-    gigvol_roles = []
-    gigvol_channels = []
+    roles = []
+    channels = []
     server_roles = []
-    gigvol_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
-    for channel in gigvol_category.channels:
-        gigvol_channels.append(channel.name)
+    category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    for channel in category.channels:
+        channels.append(channel.name)
     for role in message.guild.roles:
         server_roles.append(role.name)
-    for name in gigvol_channels:
+    for name in channels:
         if name in server_roles:
-            if name not in gigvol_roles:
-                gigvol_roles.append(name)
-    if len(gigvol_roles) > 0:
-        await message.channel.send(embed=discord.Embed(title='Available roles:', description='\n'.join(gigvol_roles), color=0x00ff00))
+            if name not in roles:
+                roles.append(name)
+    if len(roles) > 0:
+        await message.channel.send(embed=discord.Embed(title='Available roles:', description='\n'.join(roles), color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description='No YouTube roles found', color=0x00ff00))
 
 async def process_vol_message(message):
     server_roles = []
-    gigvol_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    category = discord.utils.get(message.guild.channels, name="YOUTUBE")
     content_creators = []
-    for channel in gigvol_category.channels:
+    for channel in category.channels:
         content_creators.append(channel)
     try:
         if len(message.embeds) > 0 and re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
@@ -103,7 +103,7 @@ async def process_vol_message(message):
                 if channel.name == channel_name:
                     creator_channel_found = True
             if not creator_channel_found:
-                await message.guild.create_text_channel(name=name, category=gigvol_category)
+                await message.guild.create_text_channel(name=name, category=category)
                 output += f"I've created the {name} channel\n"
             if not creator_role_found:
                 await message.guild.create_role(name=name)
@@ -151,12 +151,12 @@ async def show_delay_message(message):
     except:
         return
     message_found = False
-    msg_num = re.search(r'^~gigvol delay show (\S+)', message.content).group(1)
+    msg_num = re.search(r'^~giggle delay show (\S+)', message.content).group(1)
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
                 content = f"{msg.message.author.name} scheduled:\n"
-                content += re.search(r'^~gigvol delay \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
+                content += re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
                 await message.channel.send(content)
                 message_found = True
         if not message_found:
@@ -172,8 +172,8 @@ async def on_message(message):
     if message.author.id == 460410391290314752:
         await process_vol_message(message)
 
-    if re.search(r'^~gigvol youtube$', message.content, re.IGNORECASE):
-        await message.channel.send("""```Start your message with "~gigvol youtube" followed by one of the commands below:
+    if re.search(r'^~giggle youtube$', message.content, re.IGNORECASE):
+        await message.channel.send("""```Start your message with "~giggle youtube" followed by one of the commands below:
             roles:
                 Show roles currently assigned to you
             add <role>:
@@ -183,16 +183,16 @@ async def on_message(message):
             list:
                 Show available roles on this server```""")
 
-    elif re.search(r'^~gigvol roles$', message.content, re.IGNORECASE):
+    elif re.search(r'^~giggle roles$', message.content, re.IGNORECASE):
         await list_user_roles(message)
 
-    elif re.search(r'^~gigvol add \S', message.content, re.IGNORECASE):
+    elif re.search(r'^~giggle add \S', message.content, re.IGNORECASE):
         await add_user_role(message)
 
-    elif re.search(r'^~gigvol remove \S', message.content, re.IGNORECASE):
+    elif re.search(r'^~giggle remove \S', message.content, re.IGNORECASE):
         await remove_user_role(message)
 
-    elif re.search(r'^~gigvol list$', message.content, re.IGNORECASE):
+    elif re.search(r'^~giggle list$', message.content, re.IGNORECASE):
         await list_roles(message)
 
 client.run(bot_token)
