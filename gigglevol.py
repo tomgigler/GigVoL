@@ -58,19 +58,25 @@ async def set_creator_channel(creator, channel_name, msg):
     await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
 
 async def process_vol_message(msg):
-    vol_posts_channel_id = 796365384861089803
-    if vol_posts_channel_id == msg.channel.id:
-        creator = None
-        if msg.content == "New Video live!":
-            creator = msg.embeds[0].author.name
-        else:
-            creator = msg.embeds[0].description
+    creator = None
+    if msg.embeds[0].footer.text == "Youtube":
+        creator = msg.embeds[0].author.name
+    if msg.embeds[0].footer.text == "Twitch":
+        creator = msg.embeds[0].description
 
-        if creator in creator_channels.keys():
-            creator_channel = msg.guild.get_channel(creator_channels[creator])
+    if creator in creator_channels.keys():
+        creator_channel = msg.guild.get_channel(creator_channels[creator])
 
-            for embed in msg.embeds:
-                await creator_channel.send(embed=embed)
+        for embed in msg.embeds:
+            await creator_channel.send(embed=embed)
+            await creator_channel.send("@everyone")
+
+    # deal with sub
+
+    # deal with unsub
+
+
+    #deal with list (maybe match to channel
 
 async def list_creator_channels(msg):
     output = ""
