@@ -5,6 +5,7 @@ import asyncio
 from traceback import format_exc
 from settings import bot_token
 from gigdb import db_connect
+from confirm import confirm_request, process_reaction
 
 creator_channels = {}
 users = {}
@@ -34,6 +35,7 @@ def load_from_db():
     mydb.disconnect()
 
 async def set_creator_channel(msg, creator, channel_name, role_name=None):
+    creator = creator.lower()
     channel = discord.utils.get(msg.guild.channels, name=channel_name)
     if not channel:
         await msg.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
@@ -66,16 +68,45 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator_channels[(creator, msg.guild.id)] = ( channel.id, role_id )
 
     if role_name:
-        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel and mention the {role_name} role", color=0x00ff00))
+        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel and mention the **{role_name}** role", color=0x00ff00))
     else:
         await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
 
+async def unset_creator_channel(params):
+    msg = params['msg']
+    creator = params['creator']
+    confirmed = params['confirmed']
+
+    creator = creator.lower()
+    if ( creator, msg.guild.id ) in creator_channels.keys():
+        if not confirmed:
+            await confirm_request(msg.channel, msg.author, f"Remove {client.user.name} settings for channel {creator}?", 20, unset_creator_channel, { 'msg': msg, 'creator': creator, 'confirmed': True}, client)
+            return
+        sql = "DELETE FROM creator_channels WHERE creator = %s and guild_id = %s"
+
+        mydb = db_connect()
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, ( creator, msg.guild.id ) )
+
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
+        creator_channels.pop((creator, msg.guild.id))
+
+        await msg.channel.send(embed=discord.Embed(description=f"Deleted {creator}", color=0x00ff00))
+
+    else:
+        await msg.channel.send(embed=discord.Embed(description=f"Cannot find {creator}", color=0x00ff00))
+
 async def process_vol_message(msg):
+    if len(msg.embeds) == 0:
+        return
     creator = None
     if msg.embeds[0].footer.text == "Youtube":
-        creator = msg.embeds[0].author.name
+        creator = msg.embeds[0].author.name.lower()
     if msg.embeds[0].footer.text == "Twitch":
-        creator = msg.embeds[0].description
+        creator = msg.embeds[0].description.lower()
 
     if (creator, msg.guild.id) in creator_channels.keys():
         creator_channel_id, role_id = creator_channels[(creator, msg.guild.id)]
@@ -85,12 +116,18 @@ async def process_vol_message(msg):
             # This is where we will (eventually) mention a role
             await creator_channel.send(embed=embed)
 
+    match = re.match(r'^Successfully (un)?subscribed (to|from) (.+)', msg.embeds[0].title)
+    if match and not match.group(1):
+        await msg.channel.send(embed=discord.Embed(description=f"You should consider setting up a {client.user.name} channel for {match.group(3)}", color=0x00ff00))
+    elif match and match.group(1):
+        await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {match.group(3)}?", 20, unset_creator_channel, { 'msg': msg, 'creator': match.group(3), 'confirmed': True}, client)
+
     # deal with sub
 
     # deal with unsub
 
 
-    #deal with list (maybe match to channel
+    #deal with list (maybe match to channel)
 
 async def list_creator_channels(msg):
     output = ""
@@ -104,14 +141,20 @@ async def list_creator_channels(msg):
                 role = msg.guild.get_role(role_id)
                 role_name = role.name
             if channel:
-                output += f"**{creator}:**  {channel.name}  {role_name}\n"
+                output += f"**{creator} - {channel.name} - {role_name}**\n"
     if output != "":
-        output = "**Creator channels**\n=======================\n" + output
-        await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+        output = "**Creator - Channel - Role**\n=======================\n" + output
+    else:
+        output = "No creator channels set"
+    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game('with thegigler'))
+
+@client.event
+async def on_reaction_add(reaction, user):
+        await process_reaction(reaction, user, client)
 
 @client.event
 async def on_message(msg):
@@ -127,16 +170,22 @@ async def on_message(msg):
             match = re.match(r'test +(\d+)', msg.content)
             if match:
                 vol_msg = await msg.channel.fetch_message(int(match.group(1)))
-                await process_vol_message(vol_msg)
+                # await process_vol_message(vol_msg)
+                await msg.channel.send(vol_msg.embeds[0].to_dict())
                 return
 
             if re.match(r'^~gigvol +list *$', msg.content):
                 await list_creator_channels(msg)
 
-            match = re.match(r'^~gigvol +setchannel +"([^"]+)" +(\S+) *$', msg.content)
+            match = re.match(r'^~gigvol +setchannel +(\S+) +(\S+)( +(\S+))? *$', msg.content)
             if match:
                 if match.group(1) and match.group(2):
-                    await set_creator_channel(match.group(1), match.group(2), msg)
+                    await set_creator_channel(msg, match.group(1), match.group(2), match.group(4))
+                return
+
+            match = re.match(r'^~gigvol +unsetchannel +(\S+) *$', msg.content)
+            if match:
+                await unset_creator_channel({ 'msg': msg, 'creator': match.group(1), 'confirmed': False})
                 return
 
         except:
