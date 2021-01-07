@@ -68,8 +68,8 @@ async def process_vol_message(msg):
         creator_channel = msg.guild.get_channel(creator_channels[creator])
 
         for embed in msg.embeds:
+            # This is where we will (eventually) mention a role
             await creator_channel.send(embed=embed)
-            await creator_channel.send("@everyone")
 
     # deal with sub
 
