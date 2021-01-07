@@ -18,8 +18,9 @@ def load_from_db():
 
     mycursor.execute("SELECT * FROM creator_channels")
 
+    # Store channel_id and role_id as a tuple in creator_channels dictionary with tuple key (creator, guild_id)
     for row in mycursor.fetchall():
-        creator_channels[row[0]] = row[1]
+        creator_channels[(row[0], row[1])] = ( row[2], row[3] )
 
     mycursor.execute("SELECT id, guild_id FROM users, user_guilds WHERE id = user_id")
 
@@ -32,30 +33,42 @@ def load_from_db():
     mycursor.close()
     mydb.disconnect()
 
-async def set_creator_channel(creator, channel_name, msg):
+async def set_creator_channel(msg, creator, channel_name, role_name=None):
     channel = discord.utils.get(msg.guild.channels, name=channel_name)
     if not channel:
         await msg.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
         return
 
+    # pinging a role is optional
+    role_id = None
+    if role_name:
+        role = discord.utils.get(msg.guild.roles, name=role_name)
+        if not role:
+            await msg.channel.send(embed=discord.Embed(description=f"Cannot find {role_name} role", color=0xff0000))
+            return
+        role_id = role.id
+
     mydb = db_connect()
 
     mycursor = mydb.cursor()
 
-    if creator in creator_channels.keys():
-        sql = "UPDATE creator_channels SET channel_id = %s WHERE creator = %s"
+    if ( creator, msg.guild.id ) in creator_channels.keys():
+        sql = "UPDATE creator_channels SET channel_id = %s, role_id = %s WHERE creator = %s and guild_id = %s"
     else:
-        sql = "INSERT INTO creator_channels ( channel_id, creator ) values ( %s, %s )"
+        sql = "INSERT INTO creator_channels ( channel_id, role_id, creator, guild_id ) values ( %s, %s, %s, %s )"
 
-    mycursor.execute(sql, ( channel.id, creator ) )
+    mycursor.execute(sql, ( channel.id, role_id, creator, msg.guild.id ) )
 
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
 
-    creator_channels[creator] = channel.id
+    creator_channels[(creator, msg.guild.id)] = ( channel.id, role_id )
 
-    await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
+    if role_name:
+        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel and mention the {role_name} role", color=0x00ff00))
+    else:
+        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
 
 async def process_vol_message(msg):
     creator = None
@@ -64,8 +77,9 @@ async def process_vol_message(msg):
     if msg.embeds[0].footer.text == "Twitch":
         creator = msg.embeds[0].description
 
-    if creator in creator_channels.keys():
-        creator_channel = msg.guild.get_channel(creator_channels[creator])
+    if (creator, msg.guild.id) in creator_channels.keys():
+        creator_channel_id, role_id = creator_channels[(creator, msg.guild.id)]
+        creator_channel = msg.guild.get_channel(creator_channel_id)
 
         for embed in msg.embeds:
             # This is where we will (eventually) mention a role
@@ -80,10 +94,17 @@ async def process_vol_message(msg):
 
 async def list_creator_channels(msg):
     output = ""
-    for creator in creator_channels.keys():
-        channel = msg.guild.get_channel(creator_channels[creator])
-        if channel:
-            output += f"**{creator}:**  {channel.name}\n"
+    for creator, guild_id in creator_channels.keys():
+        if guild_id == msg.guild.id:
+            channel_id, role_id = creator_channels[(creator, guild_id)]
+            channel = msg.guild.get_channel(channel_id)
+
+            role_name = None
+            if role_id:
+                role = msg.guild.get_role(role_id)
+                role_name = role.name
+            if channel:
+                output += f"**{creator}:**  {channel.name}  {role_name}\n"
     if output != "":
         output = "**Creator channels**\n=======================\n" + output
         await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
