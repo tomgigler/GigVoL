@@ -4,8 +4,8 @@ import re
 import asyncio
 from traceback import format_exc
 from settings import bot_token
-from gigdb import db_connect
 from confirm import confirm_request, process_reaction
+import gigdb
 
 creator_channels = {}
 users = {}
@@ -13,26 +13,14 @@ users = {}
 client = discord.Client()
 
 def load_from_db():
-    mydb = db_connect()
-
-    mycursor = mydb.cursor()
-
-    mycursor.execute("SELECT * FROM creator_channels")
-
-    # Store channel_id and role_id as a tuple in creator_channels dictionary with tuple key (creator, guild_id)
-    for row in mycursor.fetchall():
+    for row in gigdb.get_creator_channels():
         creator_channels[(row[0], row[1])] = ( row[2], row[3] )
 
-    mycursor.execute("SELECT id, guild_id FROM users, user_guilds WHERE id = user_id")
-
-    for row in mycursor.fetchall():
+    for row in gigdb.get_users():
         if row[0] in users.keys():
             users[row[0]].append(row[1])
         else:
             users[row[0]] = [ row[1] ]
-
-    mycursor.close()
-    mydb.disconnect()
 
 async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator = creator.lower()
@@ -50,20 +38,7 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
             return
         role_id = role.id
 
-    mydb = db_connect()
-
-    mycursor = mydb.cursor()
-
-    if ( creator, msg.guild.id ) in creator_channels.keys():
-        sql = "UPDATE creator_channels SET channel_id = %s, role_id = %s WHERE creator = %s and guild_id = %s"
-    else:
-        sql = "INSERT INTO creator_channels ( channel_id, role_id, creator, guild_id ) values ( %s, %s, %s, %s )"
-
-    mycursor.execute(sql, ( channel.id, role_id, creator, msg.guild.id ) )
-
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
+    gigdb.save_creator_channel(creator, msg.guild.id, channel.id, role_id)
 
     creator_channels[(creator, msg.guild.id)] = ( channel.id, role_id )
 
@@ -82,15 +57,9 @@ async def unset_creator_channel(params):
         if not confirmed:
             await confirm_request(msg.channel, msg.author, f"Remove {client.user.name} settings for channel {creator}?", 20, unset_creator_channel, { 'msg': msg, 'creator': creator, 'confirmed': True}, client)
             return
-        sql = "DELETE FROM creator_channels WHERE creator = %s and guild_id = %s"
 
-        mydb = db_connect()
-        mycursor = mydb.cursor()
-        mycursor.execute(sql, ( creator, msg.guild.id ) )
 
-        mydb.commit()
-        mycursor.close()
-        mydb.disconnect()
+        gigdb.delete_creator_channel(creator, msg.guild.id)
 
         creator_channels.pop((creator, msg.guild.id))
 
@@ -116,16 +85,15 @@ async def process_vol_message(msg):
             # This is where we will (eventually) mention a role
             await creator_channel.send(embed=embed)
 
+        return
+
     match = re.match(r'^Successfully (un)?subscribed (to|from) (.+)', msg.embeds[0].title)
-    if match and not match.group(1):
-        await msg.channel.send(embed=discord.Embed(description=f"You should consider setting up a {client.user.name} channel for {match.group(3)}", color=0x00ff00))
-    elif match and match.group(1):
-        await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {match.group(3)}?", 20, unset_creator_channel, { 'msg': msg, 'creator': match.group(3), 'confirmed': True}, client)
-
-    # deal with sub
-
-    # deal with unsub
-
+    if match:
+        if not match.group(1):
+            await msg.channel.send(embed=discord.Embed(description=f"You should consider setting up a {client.user.name} channel for {match.group(3)}", color=0x00ff00))
+        else:
+            await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {match.group(3)}?", 20, unset_creator_channel, { 'msg': msg, 'creator': match.group(3), 'confirmed': True}, client)
+        return
 
     #deal with list (maybe match to channel)
 
