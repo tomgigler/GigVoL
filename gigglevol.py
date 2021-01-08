@@ -109,12 +109,13 @@ async def list_creator_channels(msg):
                 role = msg.guild.get_role(role_id)
                 role_name = role.name
             if channel:
-                output += f"**{creator} - {channel.name} - {role_name}**\n"
+                output += f"> **{creator} - {channel.name} - {role_name}**\n"
     if output != "":
-        output = "**Creator - Channel - Role**\n=======================\n" + output
+        output = "> **Creator - Channel - Role**\n> =======================\n" + output
+        await msg.channel.send(output)
     else:
         output = "No creator channels set"
-    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+        await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 @client.event
 async def on_ready():
