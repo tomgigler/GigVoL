@@ -94,7 +94,8 @@ async def process_vol_message(msg):
         if not match.group(1):
             await msg.channel.send(embed=discord.Embed(description=f"You should consider setting up a {client.user.name} channel for {match.group(3)}", color=0x00ff00))
         else:
-            await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {match.group(3)}?", 20, unset_creator_channel, { 'msg': msg, 'creator': match.group(3), 'confirmed': True}, client)
+            if (match.group(3).lower(), msg.guild.id) in creator_channels.keys():
+                await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {match.group(3)}?", 20, unset_creator_channel, { 'msg': msg, 'creator': match.group(3), 'confirmed': True}, client)
         return
 
     #deal with list (maybe match to channel)
