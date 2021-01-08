@@ -140,6 +140,11 @@ async def on_reaction_add(reaction, user):
         await process_reaction(reaction, user, client)
 
 @client.event
+async def on_guild_join(guild):
+    user = client.get_user(669370838478225448)
+    await user.send(f"{client.user.name} bot joined {guild.name}/{guild.id}")
+
+@client.event
 async def on_message(msg):
     if msg.author == client.user:
         return
