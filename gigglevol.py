@@ -146,57 +146,59 @@ async def on_message(msg):
         await process_vol_message(msg)
         return
 
-    if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id] and re.match(r'^;g(iggle)?[ $]', msg.content):
-        try:
-            match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
-            if match:
-                vol_msg = await msg.channel.fetch_message(int(match.group(2)))
-                await process_vol_message(vol_msg)
-                return
+    if re.search(r'^;(giggle|g |g$)', msg.content):
+        if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id]:
+            try:
+                match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
+                if match:
+                    vol_msg = await msg.channel.fetch_message(int(match.group(2)))
+                    await process_vol_message(vol_msg)
+                    return
 
-            if re.match(r'^;g(iggle)? +list *$', msg.content):
-                await list_creator_channels(msg)
-                return
+                if re.match(r'^;g(iggle)? +list *$', msg.content):
+                    await list_creator_channels(msg)
+                    return
 
-            match = re.match(r'^;g(igle)? +set(channel)?', msg.content)
-            if match:
-                message_content = msg.content
-                role_name = None
-                role_group = None
-                # capture role, if supplied
-                role_provided = re.match(r'.*role\s*=', message_content)
-                if role_provided:
-                    # first look for role surrounded by quotes
-                    role_match = re.match(r'.*(role\s*=\s*"([^"]+)")', message_content)
-                    if role_match:
-                        role_group = role_match.group(1)
-                        role_name = role_match.group(2)
-                    else:
-                        # else look for role without quotes
-                        role_match = re.match(r'.*(role\s*=\s*([^\s"]+))', message_content)
+                match = re.match(r'^;g(igle)? +set(channel)?', msg.content)
+                if match:
+                    message_content = msg.content
+                    role_name = None
+                    role_group = None
+                    # capture role, if supplied
+                    role_provided = re.match(r'.*role\s*=', message_content)
+                    if role_provided:
+                        # first look for role surrounded by quotes
+                        role_match = re.match(r'.*(role\s*=\s*"([^"]+)")', message_content)
                         if role_match:
                             role_group = role_match.group(1)
                             role_name = role_match.group(2)
-                            # TODO: Deal with the case when 'role\s*=' was provided, but a role could not be parsed
-                    if role_group:
-                        # strip role group from message_content
-                        message_content = message_content.replace(role_group, '')
+                        else:
+                            # else look for role without quotes
+                            role_match = re.match(r'.*(role\s*=\s*([^\s"]+))', message_content)
+                            if role_match:
+                                role_group = role_match.group(1)
+                                role_name = role_match.group(2)
+                                # TODO: Deal with the case when 'role\s*=' was provided, but a role could not be parsed
+                        if role_group:
+                            # strip role group from message_content
+                            message_content = message_content.replace(role_group, '')
 
-                match = re.match(r';g(igle)? +set(channel)? +(.+) +(\S+) *$', message_content)
-                if match.group(3) and match.group(4):
-                    await set_creator_channel(msg, match.group(3), match.group(4), role_name)
-                return
+                    match = re.match(r';g(igle)? +set(channel)? +(.+) +(\S+) *$', message_content)
+                    if match.group(3) and match.group(4):
+                        await set_creator_channel(msg, match.group(3), match.group(4), role_name)
+                    return
 
-            match = re.match(r'^;g(iggle)? +unset(channel)? +(.+)$', msg.content)
-            if match:
-                await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
-                return
+                match = re.match(r'^;g(iggle)? +unset(channel)? +(.+)$', msg.content)
+                if match:
+                    await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
+                    return
 
-        except:
-            await msg.channel.send(f"`{format_exc()}`")
-            # await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-            # await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
-
+            except:
+                await msg.channel.send(f"`{format_exc()}`")
+                # await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
+                # await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+        else:
+            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me\n\nDM {client.user.mention} to request permission", color=0xff0000))
 
 load_from_db()
 
