@@ -80,9 +80,11 @@ async def process_vol_message(msg):
     if (creator, msg.guild.id) in creator_channels.keys():
         creator_channel_id, role_id = creator_channels[(creator, msg.guild.id)]
         creator_channel = msg.guild.get_channel(creator_channel_id)
+        if role_id:
+            creator_role = msg.guild.get_role(role_id)
+            await creator_channel.send(creator_role.mention)
 
         for embed in msg.embeds:
-            # This is where we will (eventually) mention a role
             await creator_channel.send(embed=embed)
 
         return
