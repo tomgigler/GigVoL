@@ -150,6 +150,7 @@ async def on_message(msg):
     if re.search(r'^;(giggle|g |g$)', msg.content):
         if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id]:
             try:
+                # TODO: Return error if number of " is odd
                 match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
                 if match:
                     vol_msg = await msg.channel.fetch_message(int(match.group(2)))
