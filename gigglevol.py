@@ -162,7 +162,7 @@ async def on_message(msg):
                     await list_creator_channels(msg)
                     return
 
-                match = re.match(r'^;g(igle)? +set?', msg.content)
+                match = re.match(r'^;g(iggle)? +set', msg.content)
                 if match:
                     message_content = msg.content
                     role_name = None
@@ -186,14 +186,14 @@ async def on_message(msg):
                             # strip role group from message_content
                             message_content = message_content.replace(role_group, '')
 
-                    match = re.match(r';g(igle)? +set? +(.+) +(\S+) *$', message_content)
-                    if match.group(3) and match.group(4):
-                        await set_creator_channel(msg, match.group(3), match.group(4), role_name)
+                    match = re.match(r';g(iggle)? +set? +(.+) +(\S+) *$', message_content)
+                    if match.group(2) and match.group(3):
+                        await set_creator_channel(msg, match.group(2), match.group(3), role_name)
                     return
 
-                match = re.match(r'^;g(iggle)? +unset? +(.+)$', msg.content)
+                match = re.match(r'^;g(iggle)? +unset +(.+)$', msg.content)
                 if match:
-                    await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
+                    await unset_creator_channel({ 'msg': msg, 'creator': match.group(2), 'confirmed': False})
                     return
 
                 match = re.search(r'^;g(iggle)? +(help|\?) *$', msg.content)
