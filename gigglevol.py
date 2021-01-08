@@ -145,14 +145,38 @@ async def on_message(msg):
 
             if re.match(r'^;g(iggle)? +list *$', msg.content):
                 await list_creator_channels(msg)
-
-            match = re.match(r'^;g(igle)? +set(channel)? +(\S+) +(\S+)( +(\S+))? *$', msg.content)
-            if match:
-                if match.group(3) and match.group(4):
-                    await set_creator_channel(msg, match.group(3), match.group(4), match.group(5))
                 return
 
-            match = re.match(r'^;g(iggle)? +unset(channel)? +(\S+) *$', msg.content)
+            match = re.match(r'^;g(igle)? +set(channel)?', msg.content)
+            if match:
+                message_content = msg.content
+                role_name = None
+                role_group = None
+                # capture role, if supplied
+                role_provided = re.match(r'.*role\s*=', message_content)
+                if role_provided:
+                    # first look for role surrounded by quotes
+                    role_match = re.match(r'.*(role\s*=\s*"([^"]+)")', message_content)
+                    if role_match:
+                        role_group = role_match.group(1)
+                        role_name = role_match.group(2)
+                    else:
+                        # else look for role without quotes
+                        role_match = re.match(r'.*(role\s*=\s*([^\s"]+))', message_content)
+                        if role_match:
+                            role_group = role_match.group(1)
+                            role_name = role_match.group(2)
+                            # TODO: Deal with the case when 'role\s*=' was provided, but a role could not be parsed
+                    if role_group:
+                        # strip role group from message_content
+                        message_content = message_content.replace(role_group, '')
+
+                match = re.match(r';g(igle)? +set(channel)? +(.+) +(\S+) *$', message_content)
+                if match.group(3) and match.group(4):
+                    await set_creator_channel(msg, match.group(3), match.group(4), role_name)
+                return
+
+            match = re.match(r'^;g(iggle)? +unset(channel)? +(.+)$', msg.content)
             if match:
                 await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
                 return
