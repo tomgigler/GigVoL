@@ -139,11 +139,10 @@ async def on_message(msg):
 
     if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id] and re.match(r'^;g(iggle)?[ $]', msg.content):
         try:
-            match = re.match(r'test +(\d+)', msg.content)
+            match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
             if match:
-                vol_msg = await msg.channel.fetch_message(int(match.group(1)))
-                # await process_vol_message(vol_msg)
-                await msg.channel.send(vol_msg.embeds[0].to_dict())
+                vol_msg = await msg.channel.fetch_message(int(match.group(2)))
+                await process_vol_message(vol_msg)
                 return
 
             if re.match(r'^;g(iggle)? +list *$', msg.content):
