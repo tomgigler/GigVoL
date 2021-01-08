@@ -135,6 +135,7 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
+    if user.id in users.keys() and reaction.message.guild.id in users[user.id]:
         await process_reaction(reaction, user, client)
 
 @client.event
