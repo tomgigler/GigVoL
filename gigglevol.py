@@ -6,6 +6,7 @@ from traceback import format_exc
 from settings import bot_token
 from confirm import confirm_request, process_reaction
 import gigdb
+import help
 
 creator_channels = {}
 users = {}
@@ -161,7 +162,7 @@ async def on_message(msg):
                     await list_creator_channels(msg)
                     return
 
-                match = re.match(r'^;g(igle)? +set(channel)?', msg.content)
+                match = re.match(r'^;g(igle)? +set?', msg.content)
                 if match:
                     message_content = msg.content
                     role_name = None
@@ -185,14 +186,19 @@ async def on_message(msg):
                             # strip role group from message_content
                             message_content = message_content.replace(role_group, '')
 
-                    match = re.match(r';g(igle)? +set(channel)? +(.+) +(\S+) *$', message_content)
+                    match = re.match(r';g(igle)? +set? +(.+) +(\S+) *$', message_content)
                     if match.group(3) and match.group(4):
                         await set_creator_channel(msg, match.group(3), match.group(4), role_name)
                     return
 
-                match = re.match(r'^;g(iggle)? +unset(channel)? +(.+)$', msg.content)
+                match = re.match(r'^;g(iggle)? +unset? +(.+)$', msg.content)
                 if match:
                     await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
+                    return
+
+                match = re.search(r'^;g(iggle)? +(help|\?) *$', msg.content)
+                if match:
+                    await msg.channel.send(help.show_help())
                     return
 
             except:
