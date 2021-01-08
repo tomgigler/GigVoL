@@ -149,6 +149,10 @@ async def on_message(msg):
     if msg.author == client.user:
         return
 
+    if isinstance(msg.channel, discord.channel.DMChannel):
+        user = client.get_user(669370838478225448)
+        await user.send(f"{msg.author.mention} said {msg.content}")
+
     if msg.author.id == 460410391290314752:
         await process_vol_message(msg)
         return
