@@ -134,7 +134,7 @@ async def on_message(msg):
         await process_vol_message(msg)
         return
 
-    if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id]:
+    if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id] and re.match(r'^;g(iggle)?[ $]', msg.content):
         try:
             match = re.match(r'test +(\d+)', msg.content)
             if match:
@@ -143,18 +143,18 @@ async def on_message(msg):
                 await msg.channel.send(vol_msg.embeds[0].to_dict())
                 return
 
-            if re.match(r'^~gigvol +list *$', msg.content):
+            if re.match(r'^;g(iggle)? +list *$', msg.content):
                 await list_creator_channels(msg)
 
-            match = re.match(r'^~gigvol +setchannel +(\S+) +(\S+)( +(\S+))? *$', msg.content)
+            match = re.match(r'^;g(igle)? +set(channel)? +(\S+) +(\S+)( +(\S+))? *$', msg.content)
             if match:
-                if match.group(1) and match.group(2):
-                    await set_creator_channel(msg, match.group(1), match.group(2), match.group(4))
+                if match.group(3) and match.group(4):
+                    await set_creator_channel(msg, match.group(3), match.group(4), match.group(5))
                 return
 
-            match = re.match(r'^~gigvol +unsetchannel +(\S+) *$', msg.content)
+            match = re.match(r'^;g(iggle)? +unset(channel)? +(\S+) *$', msg.content)
             if match:
-                await unset_creator_channel({ 'msg': msg, 'creator': match.group(1), 'confirmed': False})
+                await unset_creator_channel({ 'msg': msg, 'creator': match.group(3), 'confirmed': False})
                 return
 
         except:
