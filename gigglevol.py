@@ -157,7 +157,7 @@ async def on_message(msg):
         await process_vol_message(msg)
         return
 
-    if re.search(r'^;(giggle|g |g$)', msg.content):
+    if re.match(r';(giggle|g |g$)', msg.content):
         if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id]:
             try:
                 # TODO: Return error if number of " is odd
@@ -205,7 +205,7 @@ async def on_message(msg):
                     await unset_creator_channel({ 'msg': msg, 'creator': match.group(2), 'confirmed': False})
                     return
 
-                match = re.search(r'^;g(iggle)? +(help|\?) *$', msg.content)
+                match = re.match(r';g(iggle)? +(help|\?) *$', msg.content)
                 if match:
                     await msg.channel.send(embed=discord.Embed(description=f"{help.show_help()}", color=0x00ff00))
                     return
