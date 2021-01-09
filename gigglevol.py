@@ -169,6 +169,16 @@ async def on_message(msg):
                     await process_vol_message(vol_msg)
                     return
 
+                match = re.match(r'^;g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
+                if match and msg.author.id == 669370838478225448:
+                    if match.group(3):
+                        guild_id = int(match.group(3))
+                    else:
+                        guild_id = msg.guild.id
+                    gigdb.save_user(int(match.group(2)), client.get_user(int(match.group(2))).name, int(guild_id), client.get_guild(guild_id).name)
+                    await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).name} in {client.get_guild(guild_id).name}")
+                    return
+
                 if re.match(r'^;g(iggle)? +list *$', msg.content):
                     await list_creator_channels(msg)
                     return
