@@ -27,8 +27,10 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator = creator.lower()
     channel = discord.utils.get(msg.guild.channels, name=channel_name)
     if not channel:
-        await msg.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
-        return
+        channel = msg.guild.get_channel(int(channel_name))
+        if not channel:
+            await msg.channel.send(embed=discord.Embed(description=f"Cannot find channel name or id {channel_name}", color=0xff0000))
+            return
 
     # pinging a role is optional
     role_id = None
@@ -44,9 +46,9 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator_channels[(creator, msg.guild.id)] = ( channel.id, role_id )
 
     if role_name:
-        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel and mention the **{role_name}** role", color=0x00ff00))
+        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel.name}** channel and mention the **{role_name}** role", color=0x00ff00))
     else:
-        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
+        await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel.name}** channel", color=0x00ff00))
 
 async def unset_creator_channel(params):
     msg = params['msg']
