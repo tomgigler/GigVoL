@@ -235,7 +235,7 @@ async def on_message(msg):
             await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`;giggle help`", color=0xff0000))
 
         else:
-            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me\n\nDM {client.user.mention} to request permission", color=0xff0000))
+            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\nPlease include the server id ({msg.guild.id}) in your message", color=0xff0000))
 
 load_from_db()
 
