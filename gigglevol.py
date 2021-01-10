@@ -179,6 +179,10 @@ async def on_message(msg):
                     await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).name} in {client.get_guild(guild_id).name}")
                     return
 
+                if re.match(r'^;g(iggle)? +invite *$', msg.content):
+                    await msg.channel.send(discord.utils.oauth_url(client.user.id, permissions=discord.Permissions(permissions=18496)))
+                    return
+
                 if re.match(r'^;g(iggle)? +list *$', msg.content):
                     await list_creator_channels(msg)
                     return
@@ -226,6 +230,7 @@ async def on_message(msg):
                 await msg.channel.send(f"`{format_exc()}`")
                 # await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
                 # await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+                return
 
             await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`;giggle help`", color=0xff0000))
 
