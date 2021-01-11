@@ -211,7 +211,7 @@ async def on_message(msg):
                             # strip role group from message_content
                             message_content = message_content.replace(role_group, '')
 
-                    match = re.match(r';g(iggle)? +set? +(.+) +(\S+) *$', message_content)
+                    match = re.match(r';g(iggle)? +set? +(.*\S) +(\S+) *$', message_content)
                     if match.group(2) and match.group(3):
                         await set_creator_channel(msg, match.group(2), match.group(3), role_name)
                     return
