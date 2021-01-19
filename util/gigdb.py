@@ -11,110 +11,35 @@ def db_connect():
             charset='utf8mb4'
             )
 
-def get_creator_channels():
+def db_execute_sql(sql, fetch, **kwargs):
     mydb = db_connect()
-    mycursor = mydb.cursor()
+    mycursor = mydb.cursor(buffered=True)
+    mycursor.execute(sql, tuple(kwargs.values()))
 
-    mycursor.execute("SELECT * FROM creator_channels")
+    rows = None
+    if fetch:
+        rows = mycursor.fetchall()
 
-    rows =  mycursor.fetchall()
-
+    mydb.commit()
     mycursor.close()
     mydb.disconnect()
 
     return rows
+
+def get_creator_channels():
+    return db_execute_sql("SELECT * FROM creator_channels", True)
 
 def get_users():
-    mydb = db_connect()
-    mycursor = mydb.cursor()
+    return db_execute_sql("SELECT id, guild_id FROM users, user_guilds WHERE id = user_id", True)
 
-    mycursor.execute("SELECT id, guild_id FROM users, user_guilds WHERE id = user_id")
-
-    rows = mycursor.fetchall()
-
-    mycursor.close()
-    mydb.disconnect()
-
-    return rows
-
-def save_user(user_id, name, guild_id, guild_name):
-
-    mydb = db_connect()
-    mycursor = mydb.cursor(buffered=True)
-
-    sql = "SELECT * FROM users WHERE id = %s"
-
-    mycursor.execute(sql, ( user_id, ))
-
-    if mycursor.rowcount > 0:
-        update = True
-    else:
-        update = False
-
-    if update:
-        sql = "UPDATE users SET name = %s WHERE id = %s"
-    else:
-        sql = "INSERT INTO users ( name, id ) values ( %s, %s )"
-
-    mycursor.execute(sql, ( name, user_id ) )
-
-    sql = "SELECT * FROM user_guilds WHERE user_id = %s and guild_id = %s"
-
-    mycursor.execute(sql, ( user_id, guild_id ) )
-
-    if mycursor.rowcount > 0:
-        update = True
-    else:
-        update = False
-
-    if update:
-        sql = "UPDATE user_guilds SET guild_name = %s WHERE user_id = %s and guild_id = %s"
-    else:
-        sql = "INSERT INTO user_guilds ( guild_name, user_id, guild_id ) values ( %s, %s, %s )"
-
-    mycursor.execute(sql, ( guild_name, user_id, guild_id ) )
-
-    mydb.commit()
-
-    mycursor.close()
-    mydb.disconnect()
+def save_user(user_id, name, guild_id=None, guild_name=None):
+    db_execute_sql("INSERT INTO users values ( %s, %s ) ON DUPLICATE KEY UPDATE name = %s", False, user_id=user_id, name=name, name_2=name)
+    if guild_id is not None:
+        db_execute_sql("INSERT INTO user_guilds values ( %s, %s, %s ) ON DUPLICATE KEY UPDATE guild_name = %s", False, user_id=user_id, guild_id=guild_id, guild_name=guild_name, guild_name_2=guild_name)
 
 def save_creator_channel(creator, guild_id, channel_id, role_id):
-
-    mydb = db_connect()
-    mycursor = mydb.cursor(buffered=True)
-
-    sql = "SELECT * from creator_channels WHERE creator = %s and guild_id = %s"
-
-    mycursor.execute(sql, ( creator, guild_id ) )
-
-    if mycursor.rowcount > 0:
-        update = True
-    else:
-        update = False
-
-    if update:
-        sql = "UPDATE creator_channels SET channel_id = %s, role_id = %s WHERE creator = %s and guild_id = %s"
-    else:
-        sql = "INSERT INTO creator_channels ( channel_id, role_id, creator, guild_id ) values ( %s, %s, %s, %s )"
-
-    mycursor.execute(sql, ( channel_id, role_id, creator, guild_id ) )
-
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
+    db_execute_sql("INSERT INTO creator_channels values ( %s, %s, %s, %s ) ON DUPLICATE KEY UPDATE channel_id = %s, role_id = %s",
+            False, creator=creator, guild_id=guild_id, channel_id=channel_id, role_id=role_id, channel_id_2=channel_id, role_id_2=role_id)
 
 def delete_creator_channel(creator, guild_id):
-
-    sql = "DELETE FROM creator_channels WHERE creator = %s and guild_id = %s"
-
-    mydb = db_connect()
-    mycursor = mydb.cursor()
-
-    mycursor.execute(sql, ( creator, guild_id ) )
-
-    mydb.commit()
-
-    mycursor.close()
-    mydb.disconnect()
-
+    db_execute_sql("DELETE FROM creator_channels WHERE creator = %s and guild_id = %s", False, guild_id=guild_id)
