@@ -42,4 +42,4 @@ def save_creator_channel(creator, guild_id, channel_id, role_id):
             False, creator=creator, guild_id=guild_id, channel_id=channel_id, role_id=role_id, channel_id_2=channel_id, role_id_2=role_id)
 
 def delete_creator_channel(creator, guild_id):
-    db_execute_sql("DELETE FROM creator_channels WHERE creator = %s and guild_id = %s", False, guild_id=guild_id)
+    db_execute_sql("DELETE FROM creator_channels WHERE creator = %s and guild_id = %s", False, creator=creator, guild_id=guild_id)
