@@ -161,7 +161,11 @@ async def on_message(msg):
         return
 
     if re.match(r';(giggle|g |g$)', msg.content):
-        if msg.author.id in users.keys() and msg.guild.id in users[msg.author.id]:
+        if msg.author.id not in users.keys():
+            gigdb.save_user(msg.author.id, msg.author.name)
+            users[msg.author.id] = {}
+
+        if users[msg.author.id] and msg.guild.id in users[msg.author.id]:
             try:
                 # TODO: Return error if number of " is odd
                 match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
