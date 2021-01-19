@@ -59,17 +59,12 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
     else:
         await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel.name}** channel", color=0x00ff00))
 
-async def unset_creator_channel(params):
-    msg = params['msg']
-    creator = params['creator']
-    confirmed = params['confirmed']
+async def unset_creator_channel(msg, creator):
 
     creator = creator.lower()
     if ( creator, msg.guild.id ) in creator_channels.keys():
-        if not confirmed:
-            await confirm_request(msg.channel, msg.author, f"Remove {client.user.name} settings for channel {creator}?", 20, unset_creator_channel, { 'msg': msg, 'creator': creator, 'confirmed': True}, client)
+        if not await confirm_request(msg.channel, msg.author.id, f"Remove {client.user.name} settings for channel {creator}?", 20, client):
             return
-
 
         gigdb.delete_creator_channel(creator, msg.guild.id)
 
@@ -116,7 +111,7 @@ async def process_vol_message(msg):
                 await msg.channel.send(embed=discord.Embed(description=f"You do not currently have a **{client.user.name}** channel set up for **{creator}** posts\n\nTo set up a channel:\n\n`;giggle set {creator} <channel name or id>`\n\nYou may also set a role to be mentioned for **{creator}** posts.  For more information type `;giggle help`", color=0x00ff00))
         else:
             if (creator.lower(), msg.guild.id) in creator_channels.keys():
-                await confirm_request(msg.channel, None, f"Remove {client.user.name} settings for channel {creator}?", 20, unset_creator_channel, { 'msg': msg, 'creator': creator, 'confirmed': True}, client)
+                unset_creator_channel(msg, creator)
         return
 
     #deal with list (maybe match to channel)
@@ -148,7 +143,7 @@ async def on_ready():
 @client.event
 async def on_reaction_add(reaction, user):
     if user.id in users.keys() and reaction.message.guild.id in users[user.id]:
-        await process_reaction(reaction, user, client)
+        process_reaction(reaction.message.id, user.id, reaction.emoji)
 
 @client.event
 async def on_guild_join(guild):
@@ -232,7 +227,7 @@ async def on_message(msg):
 
                 match = re.match(r'^;g(iggle)? +unset +(.+)$', msg.content)
                 if match:
-                    await unset_creator_channel({ 'msg': msg, 'creator': match.group(2), 'confirmed': False})
+                    await unset_creator_channel(msg, match.group(2))
                     return
 
                 match = re.match(r';g(iggle)? +(help|\?) *$', msg.content)
