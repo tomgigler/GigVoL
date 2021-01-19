@@ -16,6 +16,17 @@ users = {}
 
 client = discord.Client()
 
+def get_role_id_by_name_or_id(guild, role_param):
+    role = discord.utils.get(guild.roles, name=role_param)
+    if not role:
+        try:
+            role = discord.utils.get(guild.roles, id=int(re.search(r'(\d+)', role_param).group(1)))
+        except:
+            pass
+    if not role:
+        raise GigException(f"Cannot find {role_param} role")
+    return role.id
+
 def get_channel_by_name_or_id(guild, channel_param):
     channel = discord.utils.get(guild.channels, name=channel_param)
     if not channel:
@@ -42,13 +53,10 @@ async def set_creator_channel(msg, creator, channel_name, role_name=None):
     channel = get_channel_by_name_or_id(msg.guild, channel_name)
 
     # pinging a role is optional
-    role_id = None
-    if role_name:
-        role = discord.utils.get(msg.guild.roles, name=role_name)
-        if not role:
-            await msg.channel.send(embed=discord.Embed(description=f"Cannot find {role_name} role", color=0xff0000))
-            return
-        role_id = role.id
+    if role_name is None:
+        role_id = None
+    else:
+        role_id = get_role_id_by_name_or_id(msg.guild, role_name)
 
     gigdb.save_creator_channel(creator, msg.guild.id, channel.id, role_id)
 
