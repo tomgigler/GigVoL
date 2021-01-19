@@ -8,10 +8,24 @@ from confirm import confirm_request, process_reaction
 import gigdb
 import help
 
+class GigException(Exception):
+    pass
+
 creator_channels = {}
 users = {}
 
 client = discord.Client()
+
+def get_channel_by_name_or_id(guild, channel_param):
+    channel = discord.utils.get(guild.channels, name=channel_param)
+    if not channel:
+        try:
+            channel = discord.utils.get(guild.channels, id=int(re.search(r'(\d+)', channel_param).group(1)))
+        except:
+            pass
+    if not channel:
+        raise GigException(f"Cannot find {channel_param} channel")
+    return channel
 
 def load_from_db():
     for row in gigdb.get_creator_channels():
@@ -25,12 +39,7 @@ def load_from_db():
 
 async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator = creator.lower()
-    channel = discord.utils.get(msg.guild.channels, name=channel_name)
-    if not channel:
-        channel = msg.guild.get_channel(int(channel_name))
-        if not channel:
-            await msg.channel.send(embed=discord.Embed(description=f"Cannot find channel name or id {channel_name}", color=0xff0000))
-            return
+    channel = get_channel_by_name_or_id(msg.guild, channel_name)
 
     # pinging a role is optional
     role_id = None
@@ -230,6 +239,10 @@ async def on_message(msg):
                 if match:
                     await msg.channel.send(embed=discord.Embed(description=f"{help.show_help()}", color=0x00ff00))
                     return
+
+            except GigException as e:
+                await msg.channel.send(embed=discord.Embed(description=str(e), color=0xff0000))
+                return
 
             except:
                 await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
