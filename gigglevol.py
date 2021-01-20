@@ -175,8 +175,9 @@ async def on_message(msg):
 
     if re.match(r';(giggle|g |g$)', msg.content):
         if msg.author.id not in giguser.users.keys():
-            giguser.create_user(msg.author.id, msg.author.name, time())
-        else:
+            giguser.create_user(msg.author.id, msg.author.name, 0)
+        if time() - giguser.users[msg.author.id].last_active > 600 and msg.author.id != 669370838478225448:
+            await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
             giguser.users[msg.author.id].set_last_active(time())
 
         if giguser.users[msg.author.id] and msg.guild.id in giguser.users[msg.author.id].guilds:
