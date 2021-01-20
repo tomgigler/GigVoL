@@ -8,6 +8,7 @@ from settings import bot_token
 from confirm import confirm_request, process_reaction
 import gigdb
 import giguser
+import settings
 import help
 
 class GigException(Exception):
@@ -156,7 +157,7 @@ async def on_reaction_add(reaction, user):
 
 @client.event
 async def on_guild_join(guild):
-    user = client.get_user(669370838478225448)
+    user = client.get_user(settings.bot_owner_id)
     await user.send(f"{client.user.name} bot joined {guild.name}/{guild.id}")
 
 @client.event
@@ -165,7 +166,7 @@ async def on_message(msg):
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
-        user = client.get_user(669370838478225448)
+        user = client.get_user(settings.bot_owner_id)
         await user.send(f"{msg.author.mention} said {msg.content}")
         return
 
@@ -176,8 +177,8 @@ async def on_message(msg):
     if re.match(r';(giggle|g |g$)', msg.content):
         if msg.author.id not in giguser.users.keys():
             giguser.create_user(msg.author.id, msg.author.name, 0)
-        if time() - giguser.users[msg.author.id].last_active > 600 and msg.author.id != 669370838478225448:
-            await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
+        if time() - giguser.users[msg.author.id].last_active > 600 and msg.author.id != settings.bot_owner_id:
+            await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
             giguser.users[msg.author.id].set_last_active(time())
 
         if giguser.users[msg.author.id] and msg.guild.id in giguser.users[msg.author.id].guilds:
@@ -190,7 +191,7 @@ async def on_message(msg):
                     return
 
                 match = re.match(r'^;g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
-                if match and msg.author.id == 669370838478225448:
+                if match and msg.author.id == settings.bot_owner_id:
                     if match.group(3):
                         guild_id = int(match.group(3))
                     else:
@@ -254,7 +255,7 @@ async def on_message(msg):
 
             except:
                 await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-                await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+                await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
                 return
 
             await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`;giggle help`", color=0xff0000))
