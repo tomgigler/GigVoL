@@ -2,17 +2,18 @@
 import discord
 import re
 import asyncio
+from time import time
 from traceback import format_exc
 from settings import bot_token
 from confirm import confirm_request, process_reaction
 import gigdb
+import giguser
 import help
 
 class GigException(Exception):
     pass
 
 creator_channels = {}
-users = {}
 
 client = discord.Client()
 
@@ -46,11 +47,7 @@ def load_from_db():
     for row in gigdb.get_creator_channels():
         creator_channels[(row[0], row[1])] = ( row[2], row[3] )
 
-    for row in gigdb.get_users():
-        if row[0] in users.keys():
-            users[row[0]].append(row[1])
-        else:
-            users[row[0]] = [ row[1] ]
+    giguser.load_users()
 
 async def set_creator_channel(msg, creator, channel_name, role_name=None):
     creator = creator.lower()
@@ -154,7 +151,7 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-    if user.id in users.keys() and reaction.message.guild.id in users[user.id]:
+    if user.id in giguser.users.keys() and reaction.message.guild.id in giguser.users[user.id].guilds:
         process_reaction(reaction.message.id, user.id, reaction.emoji)
 
 @client.event
@@ -177,11 +174,12 @@ async def on_message(msg):
         return
 
     if re.match(r';(giggle|g |g$)', msg.content):
-        if msg.author.id not in users.keys():
-            gigdb.save_user(msg.author.id, msg.author.name)
-            users[msg.author.id] = {}
+        if msg.author.id not in giguser.users.keys():
+            giguser.create_user(msg.author.id, msg.author.name, time())
+        else:
+            giguser.users[msg.author.id].set_last_active(time())
 
-        if users[msg.author.id] and msg.guild.id in users[msg.author.id]:
+        if giguser.users[msg.author.id] and msg.guild.id in giguser.users[msg.author.id].guilds:
             try:
                 # TODO: Return error if number of " is odd
                 match = re.match(r';g(iggle)? +test +(\d+)', msg.content)
@@ -196,7 +194,9 @@ async def on_message(msg):
                         guild_id = int(match.group(3))
                     else:
                         guild_id = msg.guild.id
-                    gigdb.save_user(int(match.group(2)), client.get_user(int(match.group(2))).name, int(guild_id), client.get_guild(guild_id).name)
+                    if int(match.group(2)) not in giguser.users.keys():
+                        giguser.create_user(int(match.group(2)), client.get_user(int(match.group(2))).name, time())
+                    giguser.users[int(match.group(2))].add_guild(guild_id, client.get_guild(guild_id).name)
                     await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).name} in {client.get_guild(guild_id).name}")
                     return
 
