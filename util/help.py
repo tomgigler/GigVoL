@@ -7,8 +7,6 @@ To set a channel for a Youtube or Twitch creator:
 
 `;giggle set <creator> <channel> role=<role>`
 
-`<channel>` may be either a channel name or id
-
 role is optional.  If the role name contains spaces, it must be enclodesd in double quotes
 
 For example:
