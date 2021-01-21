@@ -117,7 +117,7 @@ async def process_vol_message(msg):
                 else:
                     await msg.channel.send(embed=discord.Embed(description=f"**{creator}** videos will be posted to the **{channel_name}** channel", color=0x00ff00))
             else:
-                await msg.channel.send(embed=discord.Embed(description=f"You do not currently have a **{client.user.name}** channel set up for **{creator}** posts\n\nTo set up a channel:\n\n`;giggle set {creator} <channel name or id>`\n\nYou may also set a role to be mentioned for **{creator}** posts.  For more information type `;giggle help`", color=0x00ff00))
+                await msg.channel.send(embed=discord.Embed(description=f"You do not currently have a **{client.user.name}** channel set up for **{creator}** posts\n\nTo set up a channel:\n\n`;giggle set {creator} <channel>`\n\nYou may also set a role to be mentioned for **{creator}** posts.  For more information type `;giggle help`", color=0x00ff00))
         else:
             if (creator.lower(), msg.guild.id) in creator_channels.keys():
                 unset_creator_channel(msg, creator)
