@@ -165,8 +165,14 @@ async def on_message(msg):
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
-        user = client.get_user(bot_owner_id)
-        await user.send(f"{msg.author.mention} said {msg.content}")
+        if msg.author.id == bot_owner_id:
+            match = re.match(r'(\d{18})\s+(.+)', msg.content)
+            if match:
+                user = client.get_user(int(match.group(1)))
+                await user.send(match.group(2))
+        else:
+            user = client.get_user(bot_owner_id)
+            await user.send(f"{msg.author.mention} ({msg.author.id}): {msg.content}")
         return
 
     if msg.author.id == 460410391290314752:
@@ -177,7 +183,7 @@ async def on_message(msg):
         if msg.author.id not in giguser.users.keys():
             giguser.create_user(msg.author.id, msg.author.name, 0)
         if time() - giguser.users[msg.author.id].last_active > 600 and msg.author.id != bot_owner_id:
-            await client.get_user(bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
+            await client.get_user(bot_owner_id).send(f"{msg.author.mention} ({msg.author.id}) is interacting with {client.user.mention} in the {msg.guild.name} ({msg.guild.id}) server")
             giguser.users[msg.author.id].set_last_active(time())
 
         if giguser.users[msg.author.id] and msg.guild.id in giguser.users[msg.author.id].guilds:
