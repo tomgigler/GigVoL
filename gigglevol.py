@@ -172,7 +172,8 @@ async def on_message(msg):
                 await user.send(match.group(2))
         else:
             user = client.get_user(bot_owner_id)
-            await user.send(f"{msg.author.mention} ({msg.author.id}): {msg.content}")
+            content = re.sub("\n", "\n> ", msg.content)
+            await user.send(f"{msg.author.mention} ({msg.author.id}) said:\n> {content}")
         return
 
     if msg.author.id == 460410391290314752:
