@@ -15,7 +15,7 @@ class GigException(Exception):
 
 creator_channels = {}
 
-client = discord.Client()
+client = discord.Client(intents=discord.Intents.all())
 
 def get_role_id_by_name_or_id(guild, role_param):
     role = discord.utils.get(guild.roles, name=role_param)
